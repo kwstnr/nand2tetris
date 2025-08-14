@@ -1,8 +1,8 @@
 #[derive(Debug, PartialEq)]
 pub enum TokenizedLine {
-    AInstruction(String),
-    CInstruction(String),
-    Label(String),
+    AInstruction(usize, String),
+    CInstruction(usize, String),
+    Label(usize, String),
 }
 
 pub fn tokenize(source: &Vec<&str>) -> Vec<TokenizedLine> {
@@ -11,17 +11,18 @@ pub fn tokenize(source: &Vec<&str>) -> Vec<TokenizedLine> {
         .map(|line| strip_whitespaces(line))
         .map(|line| strip_inline_comments(&line))
         .filter(|line| !line.is_empty())
-        .map(|line| tokenize_line(&line))
+        .enumerate()
+        .map(|(index, line)| tokenize_line(&line, index+1))
         .collect::<Vec<TokenizedLine>>()
 }
 
-fn tokenize_line(line: &str) -> TokenizedLine {
+fn tokenize_line(line: &str, line_number: usize) -> TokenizedLine {
     if line.starts_with("@") {
-        TokenizedLine::AInstruction(line.to_string())
+        TokenizedLine::AInstruction(line_number, line.to_string())
     } else if line.starts_with("(") {
-        TokenizedLine::Label(line.to_string())
+        TokenizedLine::Label(line_number, line.to_string())
     } else {
-        TokenizedLine::CInstruction(line.to_string())
+        TokenizedLine::CInstruction(line_number, line.to_string())
     }
 }
 
@@ -84,24 +85,24 @@ mod tests {
     #[test]
     fn tokenize_line_should_return_a_instruction() {
         let input = "@123";
-        let result = tokenize_line(input);
-        let expected = TokenizedLine::AInstruction(input.to_string());
+        let result = tokenize_line(input, 1);
+        let expected = TokenizedLine::AInstruction(1, input.to_string());
         assert_eq!(result, expected)
     }
 
     #[test]
     fn tokenize_line_should_return_label() {
         let input = "(test)";
-        let result = tokenize_line(input);
-        let expected = TokenizedLine::Label(input.to_string());
+        let result = tokenize_line(input, 1);
+        let expected = TokenizedLine::Label(1, input.to_string());
         assert_eq!(result, expected)
     }
 
     #[test]
     fn tokenize_line_should_return_c_instruction() {
         let input = "D=M+1";
-        let result = tokenize_line(input);
-        let expected = TokenizedLine::CInstruction(input.to_string());
+        let result = tokenize_line(input, 1);
+        let expected = TokenizedLine::CInstruction(1, input.to_string());
         assert_eq!(result, expected)
     }
 
@@ -117,10 +118,10 @@ mod tests {
         );
         let result = tokenize(&input);
         let expected = vec!(
-            TokenizedLine::AInstruction("@123".to_string()),
-            TokenizedLine::CInstruction("D=A+1".to_string()),
-            TokenizedLine::Label("(Label)".to_string()),
-            TokenizedLine::CInstruction("M=1".to_string()),
+            TokenizedLine::AInstruction(1, "@123".to_string()),
+            TokenizedLine::CInstruction(2, "D=A+1".to_string()),
+            TokenizedLine::Label(3, "(Label)".to_string()),
+            TokenizedLine::CInstruction(4, "M=1".to_string()),
         );
         assert_eq!(result, expected);
     }
